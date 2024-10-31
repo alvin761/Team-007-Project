@@ -1,0 +1,80 @@
+# pages/1_trail_finder.py
+import streamlit as st
+import requests
+import os
+from openai import OpenAI
+
+# Initialize OpenAI client
+client = OpenAI(api_key='')
+
+def get_completion(prompt, model="gpt-3.5-turbo"):
+    try:
+        completion = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "As an expert in nature trails, provide recommendations for creekside trails based on location, difficulty level, and visitor preferences."},
+                {"role": "user", "content": prompt},
+            ]
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        st.error(f"Error generating trail recommendation: {e}")
+        return None
+
+st.title("🔍 Trail Finder")
+st.write("Get personalized trail recommendations based on your preferences.")
+
+with st.sidebar:
+    st.header("Trail Explorer Chat")
+    messages = st.container()
+
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    
+    prompt = st.chat_input("Describe the type of trail (location, difficulty):")
+
+    if prompt:
+        st.session_state.chat_history.append({"role": "user", "content": prompt})
+        text_response = get_completion(prompt)
+        st.session_state.chat_history.append({"role": "assistant", "content": text_response})
+
+        with messages:
+            for message in st.session_state.chat_history:
+                if message["role"] == "user":
+                    messages.chat_message("user").write(message["content"])
+                else:
+                    messages.chat_message("assistant").write(message["content"])
+
+# AllTrails Section
+st.markdown("## For More Trail Recommendations")
+col1, col2, col3 = st.columns([1, 2, 1])
+
+with col2:
+    image_path = "alltrail.png"
+    if os.path.exists(image_path):
+        st.image(image_path, caption="AllTrails - Discover More Trails", use_column_width=True)
+    else:
+        st.warning("The 'alltrail.png' image was not found in the directory.")
+    
+    st.markdown(
+        """
+        <div style='text-align: center'>
+            <a href='https://www.alltrails.com/?ref=header' target='_blank'>
+                <button style='
+                    background-color: #2E7D32;
+                    color: white;
+                    padding: 10px 24px;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    margin: 10px 0;
+                    width: 100%;
+                '>
+                    Explore Creekside Trails on AllTrails
+                </button>
+            </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
