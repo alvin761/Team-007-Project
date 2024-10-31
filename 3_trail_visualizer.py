@@ -22,7 +22,7 @@ def filename_from_input(prompt):
 
 def get_image(prompt, model="dall-e-2"):
     n = 2
-    trail_prompt = f"creekside trail environment based on {prompt}"
+    trail_prompt = f"creekside trail flora and fauna based on {prompt}"
     try:
         images = client.images.generate(
             prompt=trail_prompt,
@@ -40,12 +40,12 @@ def get_image(prompt, model="dall-e-2"):
         st.error(f"Error generating image: {e}")
         return None
 
-st.title("🎨 Trail Visualizer")
-st.write("Generate visual previews of different trail environments using AI.")
+st.title("Creekside trail Animal and Plant Visualizer")
+st.write("Generate visual previews of different flora and fauna using AI.")
 
 # User input for visualization
-trail_description = st.text_input("Describe the trail environment you'd like to visualize:")
-generate_button = st.button("Generate Trail Preview")
+trail_description = st.text_input("Name or describe the plant and animal you want to visualize")
+generate_button = st.button("Generate Plant/Animal Preview")
 
 if generate_button and trail_description:
     with st.spinner("Generating trail previews..."):
