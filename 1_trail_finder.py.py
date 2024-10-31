@@ -78,3 +78,34 @@ with col2:
         """,
         unsafe_allow_html=True
     )
+
+#Button 2 (Santa Clara County Parks Website)
+    with col2:
+        image_path = "Santa Clara County Parks.png"
+        if os.path.exists(image_path):
+            st.image(image_path, caption="Santa Clara County Parks", use_column_width=True)
+        else:
+            st.warning("The 'Santa Clara County Parks.png' image was not found in the directory.")
+        
+        st.markdown(
+            """
+            <div style='text-align: center'>
+                <a href='https://data.sccgov.org/Environment/Santa-Clara-County-Parks/4uyd-siq9' target='_blank'>
+                    <button style='
+                        background-color: white;
+                        color: black;
+                        padding: 10px 24px;
+                        border: 1px solid #ccc;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 16px;
+                        margin: 10px 0;
+                        width: 100%;
+                    '>
+                        Explore Creekside Trails on SCC Open Data
+                    </button>
+                </a>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
