@@ -3,6 +3,7 @@ import streamlit as st
 import requests
 import os
 from openai import OpenAI
+import pandas as pd
 
 # Initialize OpenAI client
 client = OpenAI(api_key='')
@@ -30,8 +31,8 @@ with st.sidebar:
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
-    
-    prompt = st.chat_input("Describe the type of trail (location, difficulty):")
+    #Changed it to st.text_area to show a bigger box - Carlos 
+    prompt = st.text_area("Describe the type of trail (location, difficulty):")
 
     if prompt:
         st.session_state.chat_history.append({"role": "user", "content": prompt})
@@ -44,6 +45,11 @@ with st.sidebar:
                     messages.chat_message("user").write(message["content"])
                 else:
                     messages.chat_message("assistant").write(message["content"])
+#Imports the pandas data base in section 1 -Carlos 
+df = pd.read_csv("/Users/carlos/Downloads/Santa_Clara_County_Parks_20241029.csv")
+
+st.title ("Santa Clara Couintry Trail Parks")
+st.write(df)
 
 # AllTrails Section
 st.markdown("## For More Trail Recommendations")
