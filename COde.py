@@ -7,8 +7,8 @@ from openai import OpenAI
 # Initialize OpenAI client
 client = OpenAI(api_key='')
 
-st.title("🏞️ Creekside Trail Explorer")
-st.write("Welcome to Creekside Trail Explorer! Get personalized trail recommendations, safety information, and explore visual previews of trails.")
+st.title("🏞️ Creekside Trail Assistant")
+st.write("Welcome to Creekside Trail Assistant! Get personalized trail recommendations, educational trail information, and explore visual previews of fauna and flora.")
 
 # Sidebar for chat input and image generating
 with st.sidebar:
