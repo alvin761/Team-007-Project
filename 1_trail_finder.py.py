@@ -4,6 +4,8 @@ import requests
 import os
 from openai import OpenAI
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Initialize OpenAI client
 client = OpenAI(api_key='')
@@ -25,6 +27,100 @@ def get_completion(prompt, model="gpt-3.5-turbo"):
 st.title("🔍 Trail Finder")
 st.write("Get personalized trail recommendations based on your preferences.")
 
+
+#webapp practice
+
+st.title("Trail Data Dashboard")
+
+uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+
+    st.subheader("Data Preview")
+    st.write(df.head())
+    
+    st.subheader("Trail Data Summary")
+    st.write(df.describe())
+
+    st.subheader("Filter Trail Data")
+    columns = df.columns.tolist()
+    selected_column = st.selectbox("Select column to filter by", columns)
+    unique_values = df[selected_column].unique()
+    selected_value = st.selectbox("Select Value", unique_values)
+
+    filtered_df = df[df[selected_column] == selected_value]
+    st.write(filtered_df)
+
+    st.subheader("Plot Data")
+    x_column = st.selectbox("Select x-axis column", columns)
+    y_column = st.selectbox("Select y-axis column", columns)
+
+    if st.button("Generate Plot"):
+        st.line_chart(filtered_df.set_index(x_column)[y_column])
+else:
+    st.write("Waiting on file to upload")
+###### Code done make sure to use later for coding - Carlos
+
+#Code to plot a map - Carlos
+map_data = pd.DataFrame(
+    np.random.randn(1000,2) / [50,50] + [37.76, -122.4],
+    columns=['lat', 'lon'])
+
+####### CODE PLOT ^
+
+#### AI CHATBOT - CArlos
+st.title("Trail ChatBot")
+client = OpenAI(api_key='Your-API-Key')
+
+if "openai_model" not in st.session_state:
+    st.session_state["openai_model"] = "gpt-3.5-turbo"
+
+# Chat history
+
+if "messages" not in st.session_state:
+    st.session_state = []
+
+# Display chat message history
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# React to user input
+prompt = st.chat_input("How is it going")
+if prompt:
+    #display messages
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+    full_response = ""
+    for response in openai.ChatCompletion.create(
+        model=st.session_state["openai_model"],
+        messages=[
+            {"role" : m["role"], "content": m["content"]}
+            for m in st.session_state.messages
+            
+        ],
+        stream = True,
+    ):
+        full_response += response.choices[0].delta.get("content","")
+        message_placeholder.markdown(full_response + " ")
+    message_placeholder.markdown(full_response)
+st.session_state.messages.append({"role": "assistant", "content": full_response})
+                                 
+                
+
+
+
+
+
+
+
 with st.sidebar:
     st.header("Trail Explorer Chat")
     messages = st.container()
@@ -45,8 +141,15 @@ with st.sidebar:
                     messages.chat_message("user").write(message["content"])
                 else:
                     messages.chat_message("assistant").write(message["content"])
+
+####### AI CHAT BOT NOT WORKING ^ -CARLOS
+
+
 #Imports the pandas data base in section 1 -Carlos 
 df = pd.read_csv("/Users/carlos/Downloads/Santa_Clara_County_Parks_20241029.csv")
+
+
+
 
 st.title ("Santa Clara Couintry Trail Parks")
 st.write(df)
@@ -115,3 +218,4 @@ with col2:
             """,
             unsafe_allow_html=True
         )
+
