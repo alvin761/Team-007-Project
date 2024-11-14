@@ -1,221 +1,154 @@
-# pages/1_trail_finder.py
 import streamlit as st
-import requests
-import os
-from openai import OpenAI
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
+from openai import OpenAI
 
 # Initialize OpenAI client
-client = OpenAI(api_key='')
+client = OpenAI(api_key='Your-API-KEY')  # Replace with your API key
 
-def get_completion(prompt, model="gpt-3.5-turbo"):
+def get_trail_summary(trail_data):
+    """Generate an AI summary of trail data using OpenAI."""
     try:
+        trail_info = "\n".join([f"{key}: {value}" for key, value in trail_data.items()])
+        
+        prompt = f"""Analyze the following trail information and provide a concise summary including:
+        - Trail highlights
+        - Key features
+        - Best times to visit
+        - Any notable information
+        
+        Trail Data:
+        {trail_info}"""
+        
         completion = client.chat.completions.create(
-            model=model,
+            model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "As an expert in nature trails, provide recommendations for creekside trails based on location, difficulty level, and visitor preferences."},
-                {"role": "user", "content": prompt},
+                {"role": "system", "content": "You are a knowledgeable park ranger providing helpful trail information."},
+                {"role": "user", "content": prompt}
             ]
         )
         return completion.choices[0].message.content
     except Exception as e:
-        st.error(f"Error generating trail recommendation: {e}")
-        return None
+        return f"Error generating summary: {e}"
 
-st.title("🔍 Trail Finder")
-st.write("Get personalized trail recommendations based on your preferences.")
+# Main app code
+st.title("🏞️ Santa Clara County Trail Parks")
 
-
-#webapp practice
-
-st.title("Trail Data Dashboard")
-
-uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-
-if uploaded_file is not None:
-    df = pd.read_csv(uploaded_file)
-
-    st.subheader("Data Preview")
-    st.write(df.head())
+# Load the data
+try:
+    df = pd.read_csv("/Users/carlos/Downloads/Santa_Clara_County_Parks_20241029.csv")
     
-    st.subheader("Trail Data Summary")
-    st.write(df.describe())
+    # Print the first few rows of the dataframe for debugging
+    st.sidebar.write("### Data Preview:")
+    st.sidebar.write(df.head())
+    
+except Exception as e:
+    st.error(f"Error loading CSV file: {e}")
+    st.stop()
 
-    st.subheader("Filter Trail Data")
-    columns = df.columns.tolist()
-    selected_column = st.selectbox("Select column to filter by", columns)
-    unique_values = df[selected_column].unique()
-    selected_value = st.selectbox("Select Value", unique_values)
+# Find the city column (assuming it might have different names)
+city_column = None
+possible_city_columns = ['City', 'CITY', 'city', 'Location', 'LOCATION', 'location']
+for col in df.columns:
+    if col in possible_city_columns:
+        city_column = col
+        break
 
-    filtered_df = df[df[selected_column] == selected_value]
-    st.write(filtered_df)
+if city_column is None:
+    st.error("Could not find city column. Available columns:")
+    st.write(df.columns.tolist())
+    st.stop()
 
-    st.subheader("Plot Data")
-    x_column = st.selectbox("Select x-axis column", columns)
-    y_column = st.selectbox("Select y-axis column", columns)
+# Add filters
+st.sidebar.header("Trail Filters")
 
-    if st.button("Generate Plot"):
-        st.line_chart(filtered_df.set_index(x_column)[y_column])
+# Get unique cities and sort them
+cities = sorted(df[city_column].dropna().unique())
+
+# Allow multiple city selection
+selected_cities = st.sidebar.multiselect("Select Cities", cities)
+
+# Filter dataframe by selected cities
+if selected_cities:
+    filtered_df = df[df[city_column].isin(selected_cities)]
 else:
-    st.write("Waiting on file to upload")
-###### Code done make sure to use later for coding - Carlos
+    filtered_df = df  # Show all data if no cities are selected
 
-#Code to plot a map - Carlos
-map_data = pd.DataFrame(
-    np.random.randn(1000,2) / [50,50] + [37.76, -122.4],
-    columns=['lat', 'lon'])
+# Display filtered trails
+st.subheader("Filtered Trails")
+st.dataframe(filtered_df)
 
-####### CODE PLOT ^
-
-#### AI CHATBOT - CArlos
-st.title("Trail ChatBot")
-client = OpenAI(api_key='Your-API-Key')
-
-if "openai_model" not in st.session_state:
-    st.session_state["openai_model"] = "gpt-3.5-turbo"
-
-# Chat history
-
-if "messages" not in st.session_state:
-    st.session_state = []
-
-# Display chat message history
-
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# React to user input
-prompt = st.chat_input("How is it going")
-if prompt:
-    #display messages
-    with st.chat_message("user"):
-        st.markdown(prompt)
+# Trail selector
+if not filtered_df.empty:
+    st.subheader("Trail Details")
     
-    st.session_state.messages.append({"role": "user", "content": prompt})
-
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-    full_response = ""
-    for response in openai.ChatCompletion.create(
-        model=st.session_state["openai_model"],
-        messages=[
-            {"role" : m["role"], "content": m["content"]}
-            for m in st.session_state.messages
-            
-        ],
-        stream = True,
-    ):
-        full_response += response.choices[0].delta.get("content","")
-        message_placeholder.markdown(full_response + " ")
-    message_placeholder.markdown(full_response)
-st.session_state.messages.append({"role": "assistant", "content": full_response})
-                                 
-                
-
-
-
-
-
-
-
-with st.sidebar:
-    st.header("Trail Explorer Chat")
-    messages = st.container()
-
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-    #Changed it to st.text_area to show a bigger box - Carlos 
-    prompt = st.text_area("Describe the type of trail (location, difficulty):")
-
-    if prompt:
-        st.session_state.chat_history.append({"role": "user", "content": prompt})
-        text_response = get_completion(prompt)
-        st.session_state.chat_history.append({"role": "assistant", "content": text_response})
-
-        with messages:
-            for message in st.session_state.chat_history:
-                if message["role"] == "user":
-                    messages.chat_message("user").write(message["content"])
-                else:
-                    messages.chat_message("assistant").write(message["content"])
-
-####### AI CHAT BOT NOT WORKING ^ -CARLOS
-
-
-#Imports the pandas data base in section 1 -Carlos 
-df = pd.read_csv("/Users/carlos/Downloads/Santa_Clara_County_Parks_20241029.csv")
-
-
-
-
-st.title ("Santa Clara Couintry Trail Parks")
-st.write(df)
-
-# AllTrails Section
-st.markdown("## For More Trail Recommendations")
-col1, col2, col3 = st.columns([1, 2, 1])
-
-with col2:
-    image_path = "alltrail.png"
-    if os.path.exists(image_path):
-        st.image(image_path, caption="AllTrails - Discover More Trails", use_column_width=True)
-    else:
-        st.warning("The 'alltrail.png' image was not found in the directory.")
+    # Find a suitable column for trail names
+    trail_name_column = None
+    possible_trail_columns = ['Park_Name', 'PARK_NAME', 'Trail_Name', 'TRAIL_NAME', 'Name', 'NAME']
+    for col in df.columns:
+        if col in possible_trail_columns:
+            trail_name_column = col
+            break
     
-    st.markdown(
-        """
-        <div style='text-align: center'>
-            <a href='https://www.alltrails.com/?ref=header' target='_blank'>
-                <button style='
-                    background-color: #2E7D32;
-                    color: white;
-                    padding: 10px 24px;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 16px;
-                    margin: 10px 0;
-                    width: 100%;
-                '>
-                    Explore Creekside Trails on AllTrails
-                </button>
-            </a>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-#Button 2 (Santa Clara County Parks Website)
-    with col2:
-        image_path = "Santa Clara County Parks.png"
-        if os.path.exists(image_path):
-            st.image(image_path, caption="Santa Clara County Parks", use_column_width=True)
-        else:
-            st.warning("The 'Santa Clara County Parks.png' image was not found in the directory.")
+    if trail_name_column is None:
+        trail_name_column = df.columns[0]  # Use first column as fallback
+    
+    trail_names = sorted(filtered_df[trail_name_column].unique())
+    selected_trail = st.selectbox("Select a trail for detailed information", trail_names)
+    
+    if selected_trail:
+        # Get the selected trail data
+        trail_data = filtered_df[filtered_df[trail_name_column] == selected_trail].iloc[0].to_dict()
         
-        st.markdown(
-            """
-            <div style='text-align: center'>
-                <a href='https://data.sccgov.org/Environment/Santa-Clara-County-Parks/4uyd-siq9' target='_blank'>
-                    <button style='
-                        background-color: white;
-                        color: black;
-                        padding: 10px 24px;
-                        border: 1px solid #ccc;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        font-size: 16px;
-                        margin: 10px 0;
-                        width: 100%;
-                    '>
-                        Explore Creekside Trails on SCC Open Data
-                    </button>
-                </a>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        # Create columns for layout
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.write("### Trail Information")
+            # Display all available information
+            for field, value in trail_data.items():
+                st.write(f"**{field.replace('_', ' ').title()}:** {value}")
+        
+        # Generate and display AI summary
+        with col2:
+            st.write("### AI Trail Summary")
+            if st.button("Generate Trail Summary"):
+                with st.spinner("Generating summary..."):
+                    summary = get_trail_summary(trail_data)
+                    st.write(summary)
 
+# Try to identify latitude and longitude columns
+lat_col = None
+lon_col = None
+for col in df.columns:
+    col_lower = col.lower()
+    if 'lat' in col_lower:
+        lat_col = col
+    elif 'lon' in col_lower or 'long' in col_lower:
+        lon_col = col
+
+# Add map visualization if coordinates are available
+if lat_col and lon_col and not filtered_df.empty:
+    st.subheader("Trail Locations")
+    map_data = filtered_df[[lat_col, lon_col]].rename(columns={lat_col: 'lat', lon_col: 'lon'})
+    st.map(map_data)
+
+# Trail statistics
+if not filtered_df.empty:
+    st.subheader("Trail Statistics")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        total_trails = len(filtered_df)
+        st.metric("Total Trails", total_trails)
+        
+        if selected_cities:
+            st.metric("Selected Cities", len(selected_cities))
+    
+    with col2:
+        # Display additional statistics if numerical columns exist
+        numeric_cols = filtered_df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) > 0:
+            selected_metric = st.selectbox("Select metric to analyze", numeric_cols)
+            avg_value = filtered_df[selected_metric].mean()
+            st.metric(f"Average {selected_metric}", f"{avg_value:,.2f}")
