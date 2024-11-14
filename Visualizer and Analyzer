@@ -1,0 +1,129 @@
+import streamlit as st
+import requests
+import os
+from openai import OpenAI
+import base64
+from typing import List, Optional
+
+client = OpenAI(api_key='')
+
+CREEK_TRAIL_SPECIES = {
+    "Plant": {
+        "Trees": ["Western Red Cedar", "Red Alder", "Big Leaf Maple", "Western Hemlock", "Black Cottonwood"],
+        "Shrubs": ["Salmonberry", "Oregon Grape", "Red Elderberry", "Thimbleberry", "Indian Plum"],
+        "Ferns & Ground Cover": ["Sword Fern", "Lady Fern", "Maidenhair Fern", "Wild Ginger", "False Solomon's Seal"],
+        "Wildflowers": ["Trillium", "Stream Violet", "Skunk Cabbage", "Pacific Bleeding Heart", "Wood Sorrel"]
+    },
+    "Animal": {
+        "Birds": ["American Dipper", "Great Blue Heron", "Belted Kingfisher", "Wood Duck", "Pacific Wren"],
+        "Mammals": ["River Otter", "Black-tailed Deer", "Raccoon", "Douglas Squirrel", "Beaver"],
+        "Amphibians": ["Pacific Tree Frog", "Red-legged Frog", "Pacific Giant Salamander", "Rough-skinned Newt", "Western Toad"],
+        "Fish": ["Cutthroat Trout", "Coho Salmon", "Steelhead", "Pacific Lamprey", "Sculpin"]
+    }
+}
+
+def encode_uploaded_image(uploaded_file) -> str:
+    return base64.b64encode(uploaded_file.getbuffer()).decode('utf-8')
+
+def analyze_image(uploaded_file) -> str:
+    try:
+        base64_image = encode_uploaded_image(uploaded_file)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "What is in this image? Please identify and describe any plants, animals, and natural features."},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                ]
+            }]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error analyzing image: {str(e)}"
+
+def download_image(filename: str, url: str) -> None:
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(filename, 'wb') as file:
+            file.write(response.content)
+    else:
+        st.error(f"Error downloading image from URL: {url}")
+
+def filename_from_input(prompt: str) -> str:
+    alphanum = "".join(char if char.isalnum() or char == " " else "" for char in prompt)
+    return "_".join(alphanum.split()[:3])
+
+def get_image(prompt: str, category: str, model: str = "dall-e-2") -> Optional[List[str]]:
+    if category == "Plant":
+        base_prompt = "Detailed botanical illustration of"
+    else:
+        base_prompt = "Detailed wildlife illustration of"
+        
+    full_prompt = f"{base_prompt} {prompt} in its natural creek trail habitat, photorealistic style"
+    
+    try:
+        images = client.images.generate(
+            prompt=full_prompt,
+            model=model,
+            n=1,
+            size="1024x1024"
+        )
+        filenames = []
+        for i, image_data in enumerate(images.data):
+            filename = f"{filename_from_input(prompt)}_{i + 1}.png"
+            download_image(filename, image_data.url)
+            filenames.append(filename)
+        return filenames
+    except Exception as e:
+        st.error(f"Error generating image: {e}")
+        return None
+
+def render_species_generator():
+    st.markdown("### How to use Image Generation:\n1. Select species category\n2. Choose specific species or enter custom\n3. Click 'Generate'")
+    
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        category = st.selectbox("Choose category", ["Plant", "Animal"])
+
+    with col2:
+        subcategory = st.selectbox(f"Select {category.lower()} type", list(CREEK_TRAIL_SPECIES[category].keys()))
+        species_selection = st.selectbox("Select species or enter custom", ["Custom Entry"] + CREEK_TRAIL_SPECIES[category][subcategory])
+        species_description = (st.text_input(f"Enter custom {category.lower()} description", 
+                                           placeholder=f"e.g., {CREEK_TRAIL_SPECIES[category][subcategory][0]}")
+                             if species_selection == "Custom Entry" else species_selection)
+
+    if st.button("Generate Illustration", type="primary") and species_description:
+        with st.spinner(f"Generating {category.lower()} illustration..."):
+            if image_filenames := get_image(species_description, category):
+                st.subheader(f"Generated {category} Illustration:")
+                for filename in image_filenames:
+                    if os.path.exists(filename):
+                        st.image(filename, caption=species_description, use_column_width=True)
+                        st.markdown(f"*AI-generated illustration of {species_description} found along creek trails.*")
+                    else:
+                        st.warning("Illustration could not be generated.")
+
+def render_image_analyzer():
+    st.markdown("### How to use Image Analysis:\n1. Upload an image\n2. Click 'Analyze' for species information")
+    
+    if uploaded_file := st.file_uploader("Upload an image", type=['jpg', 'jpeg', 'png']):
+        st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+        
+        if st.button("Analyze Image"):
+            with st.spinner("Analyzing image..."):
+                if analysis_result := analyze_image(uploaded_file):
+                    st.subheader("Analysis Results")
+                    st.write(analysis_result)
+                    st.info("Analysis powered by GPT-4 Vision. Verify results with local expertise.")
+
+def main():
+    st.title("Creek Trail Species Visualizer")
+    st.write("Generate and analyze illustrations of creek trail plants and animals.")
+    
+    tab1, tab2 = st.tabs(["Generate Images", "Analyze Images"])
+    with tab1: render_species_generator()
+    with tab2: render_image_analyzer()
+
+if __name__ == "__main__":
+    main()
