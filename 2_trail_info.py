@@ -3,9 +3,9 @@ import streamlit as st
 from openai import OpenAI
 
 # Initialize OpenAI client
-client = OpenAI(api_key='')
+client = OpenAI(api_key='key')
 
-def get_hiking_info(category, model="gpt-3.5-turbo"):
+def get_hiking_info(category, model="gpt-4o-2024-08-06"):
     try:
         completion = client.chat.completions.create(
             model=model,
