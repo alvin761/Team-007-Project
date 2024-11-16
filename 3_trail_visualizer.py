@@ -1,12 +1,20 @@
-import streamlit as st
-import requests
+
 import os
-from openai import OpenAI
+import openai
 import base64
 from typing import List, Optional
+import streamlit as st
+import requests
+import pandas as pd
+import numpy as np
+from datetime import datetime
+import folium
+from streamlit_folium import st_folium
+import googlemaps
+
 
 # Initialize OpenAI client
-client = OpenAI(api_key='key')
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 # Configure page
 st.set_page_config(
@@ -155,8 +163,8 @@ def analyze_image(uploaded_file) -> str:
     """Analyze uploaded image using OpenAI's GPT-4 Vision."""
     try:
         base64_image = encode_uploaded_image(uploaded_file)
-        response = client.chat.completions.create(
-            model="gpt-4-vision-preview",
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
             messages=[{
                 "role": "user",
                 "content": [
@@ -193,7 +201,7 @@ def get_image(prompt: str, category: str, model: str = "dall-e-3") -> Optional[L
     full_prompt = f"{base_prompt} {prompt} in its natural creek trail habitat, photorealistic style"
     
     try:
-        images = client.images.generate(
+        images = openai.Image.create(
             prompt=full_prompt,
             model=model,
             n=1,
@@ -261,7 +269,7 @@ def main():
                     st.markdown(f"<h4 style='color: black;'>Your {category} Illustration:</h4>", unsafe_allow_html=True)
                     for filename in image_filenames:
                         if os.path.exists(filename):
-                            st.image(filename, use_column_width=True)
+                            st.image(filename, use_container_width=True)
                             st.markdown(
                                 f"<p class='caption'>AI-generated illustration of {species_description} in its natural habitat</p>",
                                 unsafe_allow_html=True
@@ -286,7 +294,7 @@ def main():
         )
         
         if uploaded_file:
-            st.image(uploaded_file, caption="Your uploaded image", use_column_width=True)
+            st.image(uploaded_file, caption="Your uploaded image", use_container_width=True)
             
             if st.button("🔍 Analyze Image", type="primary"):
                 with st.spinner("Analyzing your image..."):
