@@ -161,4 +161,3 @@ st.markdown("""
         <p style='font-size: 0.8em;'>© 2024 Creekside Trail Explorer</p>
     </div>
 """, unsafe_allow_html=True)
-'''
