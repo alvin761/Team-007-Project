@@ -125,7 +125,7 @@ def create_feature_card(title: str, description: str, button_text: str, page_pat
     if st.button(button_text, key=key, use_container_width=True, type="primary"):
         try:
             # Remove any "pages/" prefix if present
-            clean_path = page_path.replace('pages/', '')
+            clean_path = page_path.replace('/', '')
             # Ensure the path starts with a slash
             if not clean_path.startswith('/'):
                 clean_path = '/' + clean_path
