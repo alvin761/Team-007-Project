@@ -61,7 +61,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialize Google Maps client
-gmaps = googlemaps.Client(key='AIzaSyBmmFuKlDM85whuzM2GyplhJR9x--M9aSU') # Echoing the Google Maps API key like OpenAI API key # Replace with your Google Maps API key
+gmaps = googlemaps.Client(key='key') # Echoing the Google Maps API key like OpenAI API key # Replace with your Google Maps API key
 
 def format_summary(text):
     """
