@@ -1,8 +1,17 @@
 import streamlit as st
-from openai import OpenAI
+import streamlit as st
+import requests
+import os
+import pandas as pd
+import numpy as np
+from datetime import datetime
+import folium
+from streamlit_folium import st_folium
+import googlemaps
+import openai
 
 # Initialize OpenAI client
-client = OpenAI(api_key='API-KEY')
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 # Sidebar Enhancement
 with st.sidebar:
@@ -116,7 +125,7 @@ def get_hiking_info(category, model="gpt-4o-2024-08-06") -> str:
         str: Generated information about the hiking topic
     """
     try:
-        completion = client.chat.completions.create(
+        completion = openai.chat.completions.create(
             model=model,
             messages=[
                 {

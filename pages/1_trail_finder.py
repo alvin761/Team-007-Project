@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import openai
-from openai import OpenAI
 import os
 import pandas as pd
 import numpy as np
@@ -9,11 +8,15 @@ from datetime import datetime
 import folium
 from streamlit_folium import st_folium
 import googlemaps
+import logging 
+
+# Configure OpenAI API key
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 # Configure page
 st.set_page_config(
     page_title="Trail Finder - Creekside Trail Explorer",
-    page_icon="🏞️",
+    page_icon="🏝️",
     layout="wide"
 )
 
@@ -57,38 +60,82 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Initialize OpenAI client
-client = OpenAI(api_key='API-KEY')
 # Initialize Google Maps client
-gmaps = googlemaps.Client(key='API-KEY') # Replace with your Google Maps API key
+gmaps = googlemaps.Client(key='AIzaSyBmmFuKlDM85whuzM2GyplhJR9x--M9aSU') # Echoing the Google Maps API key like OpenAI API key # Replace with your Google Maps API key
+
+def format_summary(text):
+    """
+    Format the summary text with spaces between topics.
+    """
+    # Split the text into sections
+    sections = text.split('- ')
+    formatted_parts = []
+    
+    for section in sections:
+        if not section.strip():
+            continue
+            
+        # Split section into title and content
+        parts = section.split(':', 1)
+        if len(parts) == 2:
+            title, content = parts
+            # Format each section with a newline between topics
+            formatted_parts.append(f"{title.strip()}: {content.strip()}")
+    
+    # Join with double newlines to create space between topics
+    return '\n\n'.join(formatted_parts)
 
 def get_trail_summary(trail_data):
     try:
+        # Initialize the client
+        client = openai()
+        
+        # Format trail info
         trail_info = "\n".join([f"{key}: {value}" for key, value in trail_data.items()])
-        prompt = f"""Analyze the following trail information and provide a concise summary including:
-        - Trail highlights
-        - Key features
-        - Best times to visit
-        - Any notable information
+        
+        # System message to set the context
+        system_msg = "You are a knowledgeable park ranger. Provide a concise summary of the trail information."
+        
+        # User message with the trail data and request
+        user_msg = f"""Analyze the following trail information and provide a structured summary with these sections:
+        - Trail Highlights
+        - Key Features
+        - Best Times to Visit
+        - Notable Information
+        
+        Present each section's content without bullet points or dashes.
         
         Trail Data:
         {trail_info}"""
-        
-        completion = client.chat.completions.create(
-            model="gpt-4o-2024-08-06",
-            messages=[
-                {"role": "system", "content": "You are a knowledgeable park ranger providing helpful trail information."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return completion.choices[0].message.content
+
+        try:
+            # Make the API call
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg}
+                ],
+                temperature=0.7,
+                max_tokens=500
+            )
+            
+            # Get and format the response
+            raw_summary = str(response.choices[0].message.content)
+            formatted_summary = format_summary(raw_summary)
+            
+            return formatted_summary
+                
+        except Exception as api_error:
+            return f"API Error: {str(api_error)}"
+            
     except Exception as e:
-        return f"Error generating summary: {e}"
+        return f"Error in get_trail_summary: {str(e)}"
 
 # Main header
 st.markdown("""
     <div class="main-header">
-        <h1>🏞️ Santa Clara County Trail Parks</h1>
+        <h1>🏝️ Santa Clara County Trail Parks</h1>
         <p style='font-size: 1.2em; color: #34495e;'>
             Discover and explore local trails in Santa Clara County
         </p>
@@ -97,7 +144,7 @@ st.markdown("""
 
 # Load data
 try:
-    df = pd.read_csv("/Users/carlos/Downloads/Santa_Clara_County_Parks_20241029.csv")
+    df = pd.read_csv("Parks.csv")
     
     # Ensure consistent column naming
     df.columns = df.columns.str.strip().str.lower()
@@ -162,27 +209,27 @@ if not filtered_df.empty:
                     st.markdown(f'<div class="trail-info">{summary}</div>', unsafe_allow_html=True)
 
     # Map visualization using Google Maps API
-if 'address' in trail_data and 'zip code' in trail_data:
-    selected_address = f"{trail_data['address']}, {trail_data['city']}, {trail_data['zip code']}"
-    geocode_result = gmaps.geocode(selected_address)
-    if geocode_result:
-        lat = geocode_result[0]['geometry']['location']['lat']
-        lng = geocode_result[0]['geometry']['location']['lng']
+    if 'address' in trail_data and 'zip code' in trail_data:
+        selected_address = f"{trail_data['address']}, {trail_data['city']}, {trail_data['zip code']}"
+        geocode_result = gmaps.geocode(selected_address)
+        if geocode_result:
+            lat = geocode_result[0]['geometry']['location']['lat']
+            lng = geocode_result[0]['geometry']['location']['lng']
+        else:
+            st.warning(f"Could not geocode address: {selected_address}")
+            lat, lng = 37.7749, -122.4194  # Default to San Francisco coordinates
     else:
-        st.warning(f"Could not geocode address: {selected_address}")
+        st.warning("Selected trail does not have a valid address or zip code.")
         lat, lng = 37.7749, -122.4194  # Default to San Francisco coordinates
-else:
-    st.warning("Selected trail does not have a valid address or zip code.")
-    lat, lng = 37.7749, -122.4194  # Default to San Francisco coordinates
 
-# Create Folium map with hardcoded coordinates or geocoded coordinates
-m = folium.Map(location=[lat, lng], zoom_start=15, 
-               tiles="OpenStreetMap", 
-               attr="Map tiles by OpenStreetMap contributors.")
-folium.Marker([lat, lng], popup="Test Location").add_to(m)
+    # Create Folium map with hardcoded coordinates or geocoded coordinates
+    m = folium.Map(location=[lat, lng], zoom_start=15, 
+                   tiles="OpenStreetMap", 
+                   attr="Map tiles by OpenStreetMap contributors.")
+    folium.Marker([lat, lng], popup="Test Location").add_to(m)
 
-# Display the map in Streamlit
-st_folium(m, width="100%", height=500)
+    # Display the map in Streamlit
+    st_folium(m, width="100%", height=500)
 
 # Trail statistics
 st.markdown("<h3 style='color: black;'>Trail Statistics</h3>", unsafe_allow_html=True)
