@@ -123,7 +123,29 @@ def create_feature_card(title: str, description: str, button_text: str, page_pat
     """, unsafe_allow_html=True)
     
     if st.button(button_text, key=key, use_container_width=True, type="primary"):
-        st.switch_page(f"pages/{page_path}")
+        try:
+            # Remove any "pages/" prefix if present
+            clean_path = page_path.replace('pages/', '')
+            # Ensure the path starts with a slash
+            if not clean_path.startswith('/'):
+                clean_path = '/' + clean_path
+            # Switch to the page
+            st.switch_page(clean_path)
+        except Exception as e:
+            st.error("Navigation error. Please try refreshing the page.")
+
+def create_feature_card(title: str, description: str, button_text: str, page_path: str, key: str):
+    st.markdown(f"""
+        <div class='feature-card'>
+            <h3 style='color: #2c3e50;'>{title}</h3>
+            <p style='color: #34495e; min-height: 80px;'>
+                {description}
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button(button_text, key=key, use_container_width=True, type="primary"):
+        st.markdown(f'<meta http-equiv="refresh" content="0;url={page_path}">', unsafe_allow_html=True)
 
 def display_feature_cards():
     st.markdown("<h2 style='color: black;'>🎯 Explore Our Features</h2>", unsafe_allow_html=True)
@@ -135,7 +157,7 @@ def display_feature_cards():
             "🔍 AI Trail Finder",
             "Get personalized trail recommendations based on your preferences, skill level, and desired experience.",
             "Find Your Trail",
-            "trailfinder.py",
+            "1_trail_finder",  # Remove the leading slash
             "trail_finder"
         )
     
@@ -144,7 +166,7 @@ def display_feature_cards():
             "📖 Trail Guide",
             "Access comprehensive hiking guides, safety tips, and essential information for a safe adventure.",
             "Learn More",
-            "2_trail_info.py",
+            "2_trail_info",  # Remove the leading slash
             "trail_info"
         )
     
@@ -153,7 +175,7 @@ def display_feature_cards():
             "🎨 Species Explorer",
             "Generate and analyze visual previews of local flora and fauna along our creek trails.",
             "Explore Nature",
-            "3_trail_visualizer.py",
+            "3_trail_visualizer",  # Remove the leading slash
             "visualizer"
         )
 
