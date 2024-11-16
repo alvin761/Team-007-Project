@@ -1,11 +1,15 @@
+openai>=1.0.0
 openai
 streamlit
 requests
-os
 pandas
 numpy
-basic64
 googlemaps
 list
 folium
 datetime
+basic64
+os
+st_folium
+Optional
+logging
