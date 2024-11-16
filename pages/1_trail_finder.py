@@ -61,29 +61,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialize Google Maps client
-gmaps = googlemaps.Client(key='AIzaSyBmmFuKlDM85whuzM2GyplhJR9x--M9aSU') # Echoing the Google Maps API key like OpenAI API key # Replace with your Google Maps API key
-
-def format_summary(text):
-    """
-    Format the summary text with spaces between topics.
-    """
-    # Split the text into sections
-    sections = text.split('- ')
-    formatted_parts = []
-    
-    for section in sections:
-        if not section.strip():
-            continue
-            
-        # Split section into title and content
-        parts = section.split(':', 1)
-        if len(parts) == 2:
-            title, content = parts
-            # Format each section with a newline between topics
-            formatted_parts.append(f"{title.strip()}: {content.strip()}")
-    
-    # Join with double newlines to create space between topics
-    return '\n\n'.join(formatted_parts)
+gmaps = googlemaps.Client(key='API-KEY') # Replace with your Google Maps API key
 
 def get_trail_summary(trail_data):
     try:
