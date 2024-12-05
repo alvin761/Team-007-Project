@@ -47,6 +47,7 @@ with st.sidebar:
     if prompt:
         st.session_state.chat_history.append({"role": "user", "content": prompt})
 
+#Alvin Liu UI work
 # Enhanced CSS with nature theme
 st.markdown("""
     <style>
@@ -276,7 +277,7 @@ def main():
                             )
                         else:
                             st.warning("Could not generate illustration. Please try again.")
-
+#Alvin Liu (Image Analysis)
     with tab2:
         st.markdown("<h3 style='color: black;'>Analyze Trail Images</h3>", unsafe_allow_html=True)
         st.markdown("""
